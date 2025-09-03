@@ -1,0 +1,28 @@
+name: 'Get & Cache Dependencies'
+description: 'This action retrieves and caches dependencies for faster subsequent builds.'
+inputs:
+  cache-key:
+    description: 'Whether to cache dependencies or not'
+    required: true
+    default: 'true'
+outputs:
+  cache-hit:
+    description: 'Whether the cache was hit or not'
+    value: ${{ steps.install-deps.outputs.cache-hit }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache Dependencies
+      if: inputs.cache-key == 'true'
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: node_modules
+        key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+    - name: Install dependencies
+      id: install-deps
+      if: steps.cache.outputs.cache-hit != 'true' || inputs.cache-key != 'true'
+      run: | 
+        npm ci
+        echo "::set-output name=cache-hit::'${{ inputs.cache-key }}'"
+      shell: bash
